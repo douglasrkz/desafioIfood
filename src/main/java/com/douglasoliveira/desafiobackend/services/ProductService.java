@@ -8,18 +8,22 @@ import com.douglasoliveira.desafiobackend.domain.product.Product;
 import com.douglasoliveira.desafiobackend.domain.product.ProductDTO;
 import com.douglasoliveira.desafiobackend.domain.product.exceptions.ProductNotFoundException;
 import com.douglasoliveira.desafiobackend.repositories.ProductRepository;
+import com.douglasoliveira.desafiobackend.services.aws.AwsSnsService;
+import com.douglasoliveira.desafiobackend.services.aws.MessageDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class ProductService {
-    private CategoryService categoryService;
-    private ProductRepository repository;
+    private final CategoryService categoryService;
+    private final ProductRepository repository;
+    private final AwsSnsService snsService;
 
-    public ProductService(CategoryService categoryService, ProductRepository productRepository) {
+    public ProductService(CategoryService categoryService, ProductRepository productRepository, AwsSnsService snsService) {
         this.categoryService = categoryService;
         this.repository = productRepository;
+        this.snsService = snsService;
     }
 
     public Product insert(ProductDTO productData){
@@ -28,6 +32,7 @@ public class ProductService {
         Product newProduct = new Product(productData);
         newProduct.setCategory(category);
         this.repository.save(newProduct);
+        this.snsService.publish(new MessageDTO(product.getOwnerId()));
         return newProduct;
     }
 
@@ -39,15 +44,17 @@ public class ProductService {
         Product product = this.repository.findById(id)
                 .orElseThrow(ProductNotFoundException::new);
 
-        categoryService.getById(productData.categoryId())
-                .ifPresent(product::setCategory);
+        if(productData.categoryId() != null){
+            this.categoryService.getById(productData.categoryId())
+                    .ifPresent(product::setCategory);
+        }
 
         if(!productData.title().isEmpty()) product.setTitle(productData.title());
         if(!productData.description().isEmpty()) product.setDescription(productData.description());
         if(productData.price() == null) product.setPrice(productData.price());
 
         this.repository.save(product);
-
+        this.snsService.publish(new MessageDTO(product.getOwnerId()));
         return product;
     }
 
