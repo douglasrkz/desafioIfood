@@ -4,6 +4,7 @@ import com.douglasoliveira.desafiobackend.domain.category.Category;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.json.JSONObject;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -19,14 +20,28 @@ public class Product {
     private String description;
     private String ownerId;
     private Integer price;
-    private Category category;
+    private String category;
 
     public Product(ProductDTO data){
         this.title = data.title();
         this.description = data.description();
         this.ownerId = data.ownerId();
         this.price = data.price();
+        this.category = data.categoryId();
     }
 
+    @Override
+    public String toString(){
+        JSONObject json = new JSONObject();
+        json.put("id", id);
+        json.put("title", title);
+        json.put("description", description);
+        json.put("ownerId", ownerId);
+        json.put("price", price);
+        json.put("category", category);
+        json.put("type", "product");
+
+        return json.toString();
+    }
 
 }
